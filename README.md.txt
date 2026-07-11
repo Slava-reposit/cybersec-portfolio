@@ -1,0 +1,138 @@
+## Обзор проекта
+В данном проекте я построил и настроил корпоративную сеть на оборудовании Cisco в эмуляторе GNS3. Проект включает в себя три ключевые задачи: сегментацию сети с помощью VLAN, динамическую маршрутизацию через OSPF и резервирование шлюзов с HSRP.
+
+Проект демонстрирует навыки:
+- Настройки коммутаторов (VLAN, Trunk, EtherChannel)
+- Динамической маршрутизации (OSPF)
+- Отказоустойчивости (HSRP)
+
+---
+
+## Часть 1. Коммутация (VLAN + EtherChannel)
+
+### Цель
+Настроить два коммутатора Cisco для разделения трафика на виртуальные сети и агрегировать каналы для повышения пропускной способности.
+
+### Что сделано
+1. Созданы **VLAN 10** и **VLAN 20**
+2. Настроены **access-порты** для подключения конечных устройств
+3. Настроен **Trunk-канал (802.1q)** между коммутаторами
+4. Сконфигурирован **EtherChannel (Port-channel1)** — объединены два физических порта (Fa1/14 и Fa1/15) в один логический канал
+
+### Пример настройки (ESW1)
+
+interface FastEthernet1/0
+ switchport access vlan 10
+
+interface FastEthernet1/1
+ switchport access vlan 20
+
+interface Port-channel1
+ switchport mode trunk
+
+interface FastEthernet1/14
+ switchport mode trunk
+ channel-group 1 mode on
+
+interface FastEthernet1/15
+ switchport mode trunk
+ channel-group 1 mode on
+
+###Результат
+PC1 (VLAN 10) и PC2 (VLAN 20) изолированы друг от друга
+
+PC1 видит PC3 в той же VLAN 10 через Trunk
+
+При обрыве одного из портов в EtherChannel, канал продолжает работать через второй порт
+
+📄 Полный конфиг: ESW1_config.txt
+
+##Часть 2. Динамическая маршрутизация (OSPF)
+###Цель
+Настроить динамическую маршрутизацию между тремя роутерами в Area 0, чтобы сети автоматически обменивались маршрутами.
+
+Топология OSPF
+
+R1–R2: 10.0.12.0/24
+
+R2–R3: 10.0.23.0/24
+
+Подсеть R1: 192.168.1.0/24
+
+Подсеть R3: 192.168.3.0/24
+
+Настройка OSPF на R1
+команды:
+router ospf 1
+ network 10.0.12.0 0.0.0.255 area 0
+ network 192.168.1.0 0.0.0.255 area 0
+Настройка OSPF на R2
+команды:
+router ospf 1
+ network 10.0.12.0 0.0.0.255 area 0
+ network 10.0.23.0 0.0.0.255 area 0
+Настройка OSPF на R3
+команды:
+router ospf 1
+ network 10.0.23.0 0.0.0.255 area 0
+ network 192.168.3.0 0.0.0.255 area 0
+Проверка соседства
+R2 видит обоих соседей:
+
+
+R2#show ip ospf neighbor
+
+Neighbor ID     Pri   State           Dead Time   Address         Interface
+192.168.3.1       1   FULL/DR         00:00:31    10.0.23.3       FastEthernet0/1     
+192.168.1.1       1   FULL/DR         00:00:31    10.0.12.1       FastEthernet0/0
+Результат
+R1 автоматически узнал о сети 192.168.3.0/24 через R2
+
+R3 автоматически узнал о сети 192.168.1.0/24 через R2
+
+Пинг с R1 на 192.168.3.1 и с R3 на 192.168.1.1 успешен
+
+
+
+###Часть 3. Резервирование шлюза (HSRP)
+Цель
+Обеспечить отказоустойчивый шлюз для локальной сети с помощью HSRP. При выходе из строя активного роутера трафик автоматически переключается на резервный.
+
+
+
+Конфигурация R1 (Active)
+команды:
+interface FastEthernet0/0
+ ip address 192.168.1.2 255.255.255.0
+ standby 1 ip 192.168.1.1
+ standby 1 priority 110
+ standby 1 preempt
+Конфигурация R2 (Standby)
+команды:
+interface FastEthernet0/0
+ ip address 192.168.1.3 255.255.255.0
+ standby 1 ip 192.168.1.1
+ standby 1 preempt
+Проверка статуса HSRP
+R1 (Active):
+
+
+R1#show standby brief
+Interface   Grp Prio P State    Active          Standby         Virtual IP
+Fa0/0       1   110  P Active   local           192.168.1.3     192.168.1.1
+R2 (Standby):
+
+
+R2#show standby brief
+Interface   Grp Prio P State    Active          Standby         Virtual IP
+Fa0/0       1   100  P Standby  192.168.1.2     local           192.168.1.1
+Результат
+Клиенты используют единый шлюз 192.168.1.1
+
+При отключении R1, R2 автоматически становится Active (~3 секунды)
+
+После восстановления R1, он возвращает себе роль Active (благодаря Preempt)
+
+
+###Использованные технологии
+GNS3 • Cisco IOS (3745) • VLAN (802.1q) • EtherChannel • OSPF (Area 0) • HSRP

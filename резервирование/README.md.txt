@@ -1,0 +1,49 @@
+## Цель проекта
+Настроить отказоустойчивый шлюз для локальной сети с использованием протокола HSRP (Hot Standby Router Protocol). Это обеспечит автоматическое переключение маршрутизации при выходе из строя основного роутера.
+
+## Что было сделано
+
+### 1. Настройка интерфейсов
+
+**R1 (Active):**
+interface FastEthernet0/0
+ip address 192.168.1.2 255.255.255.0
+standby 1 ip 192.168.1.1
+standby 1 priority 110
+standby 1 preempt
+
+
+
+**R2 (Standby):**
+interface FastEthernet0/0
+ip address 192.168.1.3 255.255.255.0
+standby 1 ip 192.168.1.1
+standby 1 preempt
+
+## Результат: HSRP работает
+
+**R1 (Active):**
+R1#show standby brief
+Interface Grp Prio P State Active Standby Virtual IP
+Fa0/0 1 110 P Active local 192.168.1.3 192.168.1.1
+
+
+R1 — **Active** (активный). Приоритет 110. Виртуальный IP 192.168.1.1.
+
+**R2 (Standby):**
+R2#show standby brief
+Interface Grp Prio P State Active Standby Virtual IP
+Fa0/0 1 100 P Standby 192.168.1.2 local 192.168.1.1
+
+R2 — **Standby** (резервный). Приоритет 100. Готов заменить R1 в случае отказа.
+
+## Проверка отказоустойчивости
+
+1. **Штатная работа:** ПК отправляет трафик на виртуальный IP 192.168.1.1 → R1 обрабатывает трафик
+2. **Отказ R1:** Если R1 выключается, R2 автоматически становится Active (за ~3 секунды)
+3. **Восстановление R1:** Так как включена опция **preempt**, R1 возвращает себе роль Active
+
+Связь с внешним миром не прерывается при отказе одного из роутеров
+
+## Использованные технологии
+`GNS3`, `Cisco IOS (3745)`, `HSRP`, `Virtual IP`, `Preempt`, `Redundancy`
