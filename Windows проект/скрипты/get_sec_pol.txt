@@ -1,0 +1,135 @@
+.SYNOPSIS
+    Скрипт для сбора информации о политиках безопасности Windows
+.DESCRIPTION
+    Собирает данные о политиках паролей, локальных политиках, пользователях и аудите
+.NOTES
+    Требует прав администратора
+#>
+
+# Проверка прав администратора
+if (-NOT ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole] "Administrator")) {
+    Write-Host "Запустите скрипт от имени администратора!" -ForegroundColor Red
+    exit 1
+}
+
+# Настройка выполнения скрипта
+$ErrorActionPreference = "Stop"
+$outputFile = "secpol.txt"
+
+try {
+    # Очистка файла вывода
+    if (Test-Path $outputFile) {
+        Remove-Item $outputFile -Force
+    }
+
+    # Заголовок отчета
+    $report = @"
+================================================================
+Отчет о политиках безопасности
+Дата создания: $(Get-Date -Format "dd.MM.yyyy HH:mm:ss")
+Компьютер: $env:COMPUTERNAME
+Пользователь: $env:USERNAME
+================================================================
+
+"@
+    Add-Content -Path $outputFile -Value $report
+
+    # 1. Информация о политиках паролей
+    Write-Host "Сбор информации о политиках паролей..." -ForegroundColor Cyan
+    $passwordPolicies = @"
+
+1. ПОЛИТИКИ ПАРОЛЕЙ:
+$(net accounts)
+
+"@
+    Add-Content -Path $outputFile -Value $passwordPolicies
+
+    # 2. Информация из локальной политики безопасности
+    Write-Host "Сбор информации из локальной политики безопасности..." -ForegroundColor Cyan
+    $secpolInfo = @"
+
+2. ЛОКАЛЬНЫЕ ПОЛИТИКИ БЕЗОПАСНОСТИ:
+"@
+    Add-Content -Path $outputFile -Value $secpolInfo
+
+    # Экспорт текущих настроек безопасности
+    secedit /export /cfg temp_secpol.cfg /areas SECURITYPOLICY
+    $securityConfig = Get-Content temp_secpol.cfg | Select-String -Pattern "(MinimumPasswordLength|PasswordComplexity|MaximumPasswordAge|MinimumPasswordAge|PasswordHistorySize)"
+    Add-Content -Path $outputFile -Value $securityConfig
+    Remove-Item temp_secpol.cfg -Force -ErrorAction SilentlyContinue
+
+    # 3. Дополнительная информация о системе
+    Write-Host "Сбор дополнительной информации о системе..." -ForegroundColor Cyan
+    $systemInfo = @"
+
+3. СИСТЕМНАЯ ИНФОРМАЦИЯ:
+Версия ОС: $(Get-CimInstance Win32_OperatingSystem).Caption
+Версия сборки: $(Get-CimInstance Win32_OperatingSystem).BuildNumber
+Архитектура: $(Get-CimInstance Win32_OperatingSystem).OSArchitecture
+Дата установки: $(Get-CimInstance Win32_OperatingSystem).InstallDate
+Время работы: $([math]::Round((Get-CimInstance Win32_OperatingSystem).Uptime / 3600, 2)) часов
+
+"@
+    Add-Content -Path $outputFile -Value $systemInfo
+
+    # 4. Информация о пользователях
+    Write-Host "Сбор информации о пользователях..." -ForegroundColor Cyan
+    $usersInfo = @"
+
+4. ЛОКАЛЬНЫЕ ПОЛЬЗОВАТЕЛИ:
+"@
+    Add-Content -Path $outputFile -Value $usersInfo
+    
+    try {
+        $localUsers = Get-LocalUser | Format-Table Name, Enabled, PasswordLastSet, PasswordExpires, UserMayChangePassword, PasswordRequired -AutoSize | Out-String
+        Add-Content -Path $outputFile -Value $localUsers
+    }
+    catch {
+        Add-Content -Path $outputFile -Value "Не удалось получить информацию о пользователях"
+    }
+
+    # 5. Статус политик через Get-LocalUser
+    Write-Host "Проверка статуса политик через PowerShell..." -ForegroundColor Cyan
+    $policyStatus = @"
+
+5. СТАТУС ПОЛИТИК:
+Минимальная длина пароля: $((Get-LocalUser -Name $env:USERNAME).PasswordPolicy.MinimumPasswordLength)
+Требование сложности пароля: $((Get-LocalUser -Name $env:USERNAME).PasswordPolicy.PasswordComplexity)
+Максимальный срок жизни пароля: $((Get-LocalUser -Name $env:USERNAME).PasswordPolicy.MaximumPasswordAge)
+История паролей: $((Get-LocalUser -Name $env:USERNAME).PasswordPolicy.PasswordHistory)
+
+"@
+    Add-Content -Path $outputFile -Value $policyStatus
+
+    # 6. Проверка через Security Policy
+    Write-Host "Проверка через Audit Policy..." -ForegroundColor Cyan
+    $auditInfo = @"
+
+6. ПОЛИТИКИ АУДИТА:
+"@
+    Add-Content -Path $outputFile -Value $auditInfo
+    
+    $auditPolicy = auditpol /get /category:* | Out-String
+    Add-Content -Path $outputFile -Value $auditPolicy
+
+    # 7. Заключение
+    $conclusion = @"
+
+================================================================
+ОТЧЕТ ЗАВЕРШЕН
+Файл отчета: $(Resolve-Path $outputFile)
+================================================================
+"@
+    Add-Content -Path $outputFile -Value $conclusion
+
+    Write-Host "Отчет успешно сохранен в файл: $outputFile" -ForegroundColor Green
+    Write-Host "Содержимое файла:" -ForegroundColor Yellow
+    Write-Host "========================================" -ForegroundColor Gray
+    Get-Content $outputFile
+    Write-Host "========================================" -ForegroundColor Gray
+
+}
+catch {
+    Write-Host "Ошибка при выполнении скрипта: $_" -ForegroundColor Red
+    exit 1
+}

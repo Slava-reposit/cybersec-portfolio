@@ -1,0 +1,25 @@
+# get_fw_rules
+$ruleNames = @("Block_http_conn", "Allow_rdp_conn", "Block_ftp_conn", "Block_ping_conn")
+
+$results = Get-NetFirewallRule -DisplayName $ruleNames | ForEach-Object {
+    $rule = $_
+    $portFilter = $rule | Get-NetFirewallPortFilter
+    
+    [PSCustomObject]@{
+        "Название правила" = $rule.DisplayName
+        "Включено" = if ($rule.Enabled) { "Да" } else { "Нет" }
+        "Протокол" = if ($portFilter.Protocol) { $portFilter.Protocol } else { "Any" }
+        "Локальный порт" = if ($portFilter.LocalPort) { $portFilter.LocalPort } else { "Any" }
+        "Удаленный порт" = if ($portFilter.RemotePort) { $portFilter.RemotePort } else { "Any" }
+        "Действие" = $rule.Action
+        "Профиль" = $rule.Profile -replace ",", ", "
+    }
+}
+
+# Вывод в файл
+$results | Format-Table -AutoSize | Out-File -FilePath "result.txt" -Encoding UTF8
+
+# Дополнительный вывод в консоль для проверки
+$results | Format-Table -AutoSize
+
+Write-Host "`nРезультаты сохранены в result.txt" -ForegroundColor Green

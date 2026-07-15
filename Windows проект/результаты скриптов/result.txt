@@ -1,0 +1,9 @@
+﻿
+Название правила Включено Протокол Локальный порт Удаленный порт Действие Профиль
+---------------- -------- -------- -------------- -------------- -------- -------
+Block_http_conn  Да       TCP      80             Any               Block Any    
+Block_ftp_conn   Да       TCP      Any            21                Block Any    
+Allow_rdp_conn   Да       TCP      3389           Any               Allow Any    
+Block_ping_conn  Да       ICMPv4   RPC            Any               Block Any    
+
+
