@@ -1,0 +1,1 @@
+5 0 * * * /usr/sbin/logwatch --detail High --format html --range yesterday --service All --mailto slava.com553@gmail.com

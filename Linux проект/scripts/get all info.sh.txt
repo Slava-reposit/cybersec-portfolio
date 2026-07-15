@@ -1,0 +1,169 @@
+#!/bin/bash
+
+# Проверка, что скрипт запущен от root
+if [[ $EUID -ne 0 ]]; then
+   echo "Этот скрипт должен быть запущен от root пользователя" 
+   exit 1
+fi
+
+# Файл для записи информации
+INFO_FILE="info"
+ARCHIVE_FILE="OS_RESULT.tar"
+
+# Очистка предыдущих файлов, если они существуют
+rm -f "$INFO_FILE" "$ARCHIVE_FILE"
+
+echo "=== Сбор информации о системе ==="
+
+# 1. Установленные пакеты
+echo "1. Сбор информации об установленных пакетах..."
+echo "=== УСТАНОВЛЕННЫЕ ПАКЕТЫ ===" > "$INFO_FILE"
+
+# Определяем пакетный менеджер системы
+if command -v apt &> /dev/null; then
+    echo "Система: Debian/Ubuntu (APT)" >> "$INFO_FILE"
+    dpkg --get-selections >> "$INFO_FILE"
+    PKG_MANAGER="apt"
+elif command -v yum &> /dev/null; then
+    echo "Система: RHEL/CentOS/Fedora (YUM)" >> "$INFO_FILE"
+    yum list installed >> "$INFO_FILE"
+    PKG_MANAGER="yum"
+elif command -v dnf &> /dev/null; then
+    echo "Система: Fedora/RHEL 8+ (DNF)" >> "$INFO_FILE"
+    dnf list installed >> "$INFO_FILE"
+    PKG_MANAGER="dnf"
+elif command -v pacman &> /dev/null; then
+    echo "Система: Arch Linux (Pacman)" >> "$INFO_FILE"
+    pacman -Q >> "$INFO_FILE"
+    PKG_MANAGER="pacman"
+elif command -v zypper &> /dev/null; then
+    echo "Система: openSUSE (Zypper)" >> "$INFO_FILE"
+    zypper pa --installed-only >> "$INFO_FILE"
+    PKG_MANAGER="zypper"
+else
+    echo "Неизвестный пакетный менеджер" >> "$INFO_FILE"
+    PKG_MANAGER="unknown"
+fi
+
+echo "" >> "$INFO_FILE"
+
+# 2. Запущенные процессы
+echo "2. Сбор информации о запущенных процессах..."
+echo "=== ЗАПУЩЕННЫЕ ПРОЦЕССЫ ===" >> "$INFO_FILE"
+ps aux >> "$INFO_FILE"
+echo "" >> "$INFO_FILE"
+
+# 3. Открытые порты
+echo "3. Сбор информации об открытых портах..."
+echo "=== ОТКРЫТЫЕ ПОРТЫ ===" >> "$INFO_FILE"
+
+# Проверяем, какие команды доступны
+if command -v ss &> /dev/null; then
+    ss -tulpn >> "$INFO_FILE"
+    echo "(использована команда ss)" >> "$INFO_FILE"
+elif command -v netstat &> /dev/null; then
+    netstat -tulpn >> "$INFO_FILE"
+    echo "(использована команда netstat)" >> "$INFO_FILE"
+else
+    echo "Не удалось найти команду для проверки портов" >> "$INFO_FILE"
+fi
+
+echo "" >> "$INFO_FILE"
+
+# 4. Установка пакетов cowsay и sl
+echo "4. Установка пакетов cowsay и sl..."
+echo "=== УСТАНОВКА ПАКЕТОВ ===" >> "$INFO_FILE"
+
+install_package() {
+    local package=$1
+    echo "Установка $package..." | tee -a "$INFO_FILE"
+    
+    case $PKG_MANAGER in
+        apt)
+            apt-get update &>> "$INFO_FILE"
+            apt-get install -y "$package" &>> "$INFO_FILE"
+            ;;
+        yum)
+            yum install -y "$package" &>> "$INFO_FILE"
+            ;;
+        dnf)
+            dnf install -y "$package" &>> "$INFO_FILE"
+            ;;
+        pacman)
+            pacman -S --noconfirm "$package" &>> "$INFO_FILE"
+            ;;
+        zypper)
+            zypper --non-interactive install "$package" &>> "$INFO_FILE"
+            ;;
+        *)
+            echo "Неизвестный пакетный менеджер, пропускаем установку $package" >> "$INFO_FILE"
+            return 1
+            ;;
+    esac
+    
+    if [ $? -eq 0 ]; then
+        echo "$package успешно установлен" >> "$INFO_FILE"
+    else
+        echo "Ошибка при установке $package" >> "$INFO_FILE"
+    fi
+}
+
+# Устанавливаем пакеты
+install_package "cowsay"
+install_package "sl"
+
+echo "" >> "$INFO_FILE"
+
+# 5. Версия ядра и операционной системы
+echo "5. Сбор информации о версии ядра и ОС..."
+echo "=== ИНФОРМАЦИЯ О СИСТЕМЕ ===" >> "$INFO_FILE"
+
+# Версия ядра
+echo "Версия ядра:" >> "$INFO_FILE"
+uname -r >> "$INFO_FILE"
+echo "" >> "$INFO_FILE"
+
+# Информация об ОС
+if [ -f /etc/os-release ]; then
+    echo "Информация об ОС:" >> "$INFO_FILE"
+    cat /etc/os-release >> "$INFO_FILE"
+elif command -v lsb_release &> /dev/null; then
+    echo "Информация об ОС:" >> "$INFO_FILE"
+    lsb_release -a >> "$INFO_FILE"
+else
+    echo "Основная информация об ОС:" >> "$INFO_FILE"
+    cat /etc/*release* 2>/dev/null | head -5 >> "$INFO_FILE"
+fi
+
+echo "" >> "$INFO_FILE"
+
+# Дополнительная системная информация
+echo "Дополнительная информация:" >> "$INFO_FILE"
+echo "Имя хоста: $(hostname)" >> "$INFO_FILE"
+echo "Время работы: $(uptime -p)" >> "$INFO_FILE"
+echo "" >> "$INFO_FILE"
+
+# 6. Создание архива
+echo "6. Создание архива $ARCHIVE_FILE..."
+tar -cf "$ARCHIVE_FILE" "$INFO_FILE"
+
+# Проверка результата
+if [ $? -eq 0 ]; then
+    echo "=== ВЫПОЛНЕНИЕ ЗАВЕРШЕНО ==="
+    echo "Файл с информацией: $INFO_FILE"
+    echo "Архив создан: $ARCHIVE_FILE"
+    
+    # Показываем размер файлов
+    echo "Размер файлов:"
+    ls -lh "$INFO_FILE" "$ARCHIVE_FILE"
+    
+    # Демонстрация установленных пакетов
+    if command -v cowsay &> /dev/null; then
+        echo ""
+        echo "Демонстрация cowsay:"
+        cowsay "Системная информация собрана!"
+    fi
+else
+    echo "Ошибка при создании архива!"
+    exit 1
+fi
