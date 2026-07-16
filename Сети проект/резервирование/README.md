@@ -6,34 +6,42 @@
 ### 1. Настройка интерфейсов
 
 **R1 (Active):**
+```cisco
 interface FastEthernet0/0
 ip address 192.168.1.2 255.255.255.0
 standby 1 ip 192.168.1.1
 standby 1 priority 110
 standby 1 preempt
-
+```
 
 
 **R2 (Standby):**
+```cisco
 interface FastEthernet0/0
 ip address 192.168.1.3 255.255.255.0
 standby 1 ip 192.168.1.1
 standby 1 preempt
-
+```
 ## Результат: HSRP работает
 
 **R1 (Active):**
+```cisco
 R1#show standby brief
-Interface Grp Prio P State Active Standby Virtual IP
-Fa0/0 1 110 P Active local 192.168.1.3 192.168.1.1
+```
+| Interface | Grp | Prio | P | State | Active | Standby  | Virtual IP |
+|-----------|-----|------|---|-------|--------|----------|------------|
+| Fa0/0     |  1  | 110  | P | Active | local | 192.168.1.3 | 192.168.1.1 |
 
 
 R1 — **Active** (активный). Приоритет 110. Виртуальный IP 192.168.1.1.
 
 **R2 (Standby):**
+```cisco
 R2#show standby brief
-Interface Grp Prio P State Active Standby Virtual IP
-Fa0/0 1 100 P Standby 192.168.1.2 local 192.168.1.1
+```
+| Interface | Grp | Prio | P | State | Active | Standby | Virtual IP |
+|-----------|-----|------|---|-------|--------|---------|------------|
+| Fa0/0     |  1  | 100  | P | Standby | local |192.168.1.2 |  local 192.168.1.1 |
 
 R2 — **Standby** (резервный). Приоритет 100. Готов заменить R1 в случае отказа.
 
