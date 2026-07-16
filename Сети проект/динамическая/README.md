@@ -7,10 +7,10 @@
 ```cisco
 	interface FastEthernet0/0
 	ip address 10.0.12.1 255.255.255.0
-```
+
 	interface FastEthernet0/1
 	ip address 192.168.1.1 255.255.255.0
-
+```
 
 **R2 (FastEthernet0/0 и FastEthernet0/1):**
 
@@ -18,10 +18,10 @@
 ```cisco
 	interface FastEthernet0/0
 	ip address 10.0.12.2 255.255.255.0
-```
+
 	interface FastEthernet0/1
 	ip address 10.0.23.2 255.255.255.0
-
+```
 
 **R3 (FastEthernet0/0 и FastEthernet0/1):**
 
@@ -29,17 +29,17 @@
 ```cisco
 	interface FastEthernet0/0
 	ip address 10.0.23.3 255.255.255.0
-```
+
 	interface FastEthernet0/1
 	ip address 192.168.3.1 255.255.255.0
-
+```
 
 ### 2. Настройка OSPF
 
 На всех трёх маршрутизаторах объявлены сети в Area 0:
 
 **R1:**
-команды:
+**команды:**
 ```cisco
 	router ospf 1
 	network 10.0.12.0 0.0.0.255 area 0
@@ -47,27 +47,27 @@
 ```
 
 **R2:**
-команды:
-
+**команды:**
+```cisco
 	router ospf 1
 	network 10.0.12.0 0.0.0.255 area 0
 	network 10.0.23.0 0.0.0.255 area 0
 
-
+```
 
 **R3:**
-команды:
-
+**команды:**
+```cisco
 	router ospf 1
 	network 10.0.23.0 0.0.0.255 area 0
 	network 192.168.3.0 0.0.0.255 area 0
-
+```
 
 
 ## Результат: соседство OSPF установлено (FULL/DR)
 
 **R1 видит соседа R2:**
-команды:
+**команды:**
 
 	show ip ospf neighbor
 	
@@ -77,7 +77,7 @@ Neighbor ID Pri State Dead Time Address Interface
 
 
 **R2 видит обоих соседей (R1 и R3):**
-команды:
+**команды:**
 
 	show ip ospf neighbor
 	
@@ -88,7 +88,7 @@ Neighbor ID Pri State Dead Time Address Interface
 text
 
 **R3 видит соседа R2:**
-команды:
+**команды:**
 
 	show ip ospf neighbor
 	
