@@ -71,8 +71,9 @@
 
 	show ip ospf neighbor
 	
-Neighbor ID Pri State Dead Time Address Interface
-10.0.23.2 1 FULL/BDR 00:00:37 10.0.12.2 FastEthernet0/0
+| Neighbor ID  | Pri  | State Dead    |  Time     | Address     |  Interface |
+|--------------|------|---------------|-----------|-------------|------------|
+| 10.0.23.2    | 1    |  FULL/BDR     |  00:00:37 |  10.0.12.2  | FastEthernet0/0 |
 
 
 
@@ -81,9 +82,10 @@ Neighbor ID Pri State Dead Time Address Interface
 
 	show ip ospf neighbor
 	
-Neighbor ID Pri State Dead Time Address Interface
-192.168.3.1 1 FULL/DR 00:00:31 10.0.23.3 FastEthernet0/1
-192.168.1.1 1 FULL/DR 00:00:31 10.0.12.1 FastEthernet0/0
+| Neighbor ID  | Pri  | State Dead    |  Time     | Address     |  Interface |
+|--------------|------|---------------|-----------|-------------|------------|
+| 192.168.3.1  |  1   |  FULL/DR      | 00:00:31  |  10.0.23.3  |  FastEthernet0/1 |
+| 192.168.1.1  |  1   |  FULL/DR      | 00:00:31  |  10.0.12.1  |  FastEthernet0/0 | 
 
 text
 
