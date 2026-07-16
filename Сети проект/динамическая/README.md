@@ -4,9 +4,10 @@
 
 **R1 (FastEthernet0/0 и FastEthernet0/1):**
 команды:
+```cisco
 	interface FastEthernet0/0
 	ip address 10.0.12.1 255.255.255.0
-
+```
 	interface FastEthernet0/1
 	ip address 192.168.1.1 255.255.255.0
 
@@ -14,9 +15,10 @@
 **R2 (FastEthernet0/0 и FastEthernet0/1):**
 
 команды:
+```cisco
 	interface FastEthernet0/0
 	ip address 10.0.12.2 255.255.255.0
-
+```
 	interface FastEthernet0/1
 	ip address 10.0.23.2 255.255.255.0
 
@@ -24,9 +26,10 @@
 **R3 (FastEthernet0/0 и FastEthernet0/1):**
 
 команды:
+```cisco
 	interface FastEthernet0/0
 	ip address 10.0.23.3 255.255.255.0
-
+```
 	interface FastEthernet0/1
 	ip address 192.168.3.1 255.255.255.0
 
@@ -37,13 +40,15 @@
 
 **R1:**
 команды:
+```cisco
 	router ospf 1
 	network 10.0.12.0 0.0.0.255 area 0
 	network 192.168.1.0 0.0.0.255 area 0
-
+```
 
 **R2:**
 команды:
+
 	router ospf 1
 	network 10.0.12.0 0.0.0.255 area 0
 	network 10.0.23.0 0.0.0.255 area 0
@@ -52,6 +57,7 @@
 
 **R3:**
 команды:
+
 	router ospf 1
 	network 10.0.23.0 0.0.0.255 area 0
 	network 192.168.3.0 0.0.0.255 area 0
@@ -62,7 +68,9 @@
 
 **R1 видит соседа R2:**
 команды:
+
 	show ip ospf neighbor
+	
 Neighbor ID Pri State Dead Time Address Interface
 10.0.23.2 1 FULL/BDR 00:00:37 10.0.12.2 FastEthernet0/0
 
@@ -70,7 +78,9 @@ Neighbor ID Pri State Dead Time Address Interface
 
 **R2 видит обоих соседей (R1 и R3):**
 команды:
+
 	show ip ospf neighbor
+	
 Neighbor ID Pri State Dead Time Address Interface
 192.168.3.1 1 FULL/DR 00:00:31 10.0.23.3 FastEthernet0/1
 192.168.1.1 1 FULL/DR 00:00:31 10.0.12.1 FastEthernet0/0
@@ -79,7 +89,9 @@ text
 
 **R3 видит соседа R2:**
 команды:
+
 	show ip ospf neighbor
+	
 Neighbor ID Pri State Dead Time Address Interface
 10.0.23.2 1 FULL/BDR 00:00:35 10.0.23.2 FastEthernet0/0
 
