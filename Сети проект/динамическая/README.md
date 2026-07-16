@@ -92,9 +92,9 @@ text
 
 	show ip ospf neighbor
 	
-Neighbor ID  | Pri  | State Dead    |  Time     | Address     |  Interface
-|-------------|-------------|-------------|-------------|
-10.0.23.2    | 1    |   FULL/BDR    | 00:00:35  | 10.0.23.2   |  FastEthernet0/0
+| Neighbor ID  | Pri  | State Dead    |  Time     | Address     |  Interface |
+|--------------|------|---------------|-----------|-------------|------------|
+| 10.0.23.2    | 1    |   FULL/BDR    | 00:00:35  | 10.0.23.2   |  FastEthernet0/0 |
 
 
 ## Проверка связности
